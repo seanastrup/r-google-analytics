@@ -5,3 +5,4 @@
 .httr-oauth
 ga-auth.R
 .DS_Store
+R-google-analytics.Rproj
