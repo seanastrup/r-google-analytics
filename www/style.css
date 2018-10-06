@@ -5,7 +5,7 @@ background-color: #fafafa;
   height: 50%;
 }
 header, .main, footer {
-  padding-left: 300px;
+  padding-left: 250px;
 }
 @media only screen and (max-width : 992px) {
   header, .main, footer {
@@ -19,4 +19,8 @@ header, .main, footer {
 .navbar{
   left: 100px;
   right: 100px;
+}
+#login-btn{
+  float: right;
+  padding: 5px;
 }

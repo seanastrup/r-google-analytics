@@ -7,6 +7,8 @@ library(shinydashboard)
 library(googleAnalyticsR)
 library(googleAuthR)
 library(highcharter)
+library(DT)
+library(tidyverse)
 source('ga-auth.R')
 
 
@@ -17,7 +19,7 @@ source('ga-auth.R')
 ui <- 
   shiny::fluidPage(
     tags$head(
-      tags$script(src='https://code.jquery.com/jquery-2.2.4.min.js'),  # jquery
+      #tags$script(src='https://code.jquery.com/jquery-2.2.4.min.js'),  # jquery
       tags$link(rel = 'stylesheet', href = 'https://fonts.googleapis.com/icon?family=Material+Icons'), # google fonts
       tags$script(src = 'https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0-rc.2/js/materialize.min.js'),  # material js
       tags$script(src = 'my.js'),  # my js
@@ -38,9 +40,9 @@ ui <-
         tags$div(class = 'user-view', 
           tags$div(class = 'background'
             # insert packground
-            
           ), 
-          tags$br()
+          googleAuthUI('login'), 
+          tags$div(class = 'divider')
         )
       ),  # background li 
       tags$li(class = 'blue', 
@@ -62,17 +64,24 @@ ui <-
       )  # blue li
     ),  # side nav
     tags$div(class = 'main',
-      tags$br(), 
-      tags$br(),
+      authDropdownUI('auth_menu',inColumns = TRUE),
       shiny::fluidRow(
         shiny::column(
           width = 6,
           tags$div(class = 'card z-debth-5', 
             tags$div(class = 'card-content',
-              highcharter::highchartOutput('DailyDeviceSessions', height = 250)       
+              highcharter::highchartOutput('DailyDeviceSessions', height = 300)       
             )  # card content
           )  # card
-        )  # column
+        ),  # column
+        shiny::column(
+          width = 6, 
+          tags$div(class = 'card z-debth-5', 
+            tags$div(class = 'card-content',
+              highcharter::highchartOutput('SessionsByHour', height = 300)       
+            )  # card content
+          )  # card
+        )
       )  # row
     )  # div
   )  # ui
@@ -93,7 +102,10 @@ server <- function(input, output) {
   
   selected_id <- callModule(authDropdown, 'auth_menu', ga.table = ga_accounts)
   
-  gadata <- reactive({
+  ###################################################
+  ######## DEFINE CALLS TO GOOGLE ANALYTICS #########
+  ###################################################
+  get_device_sessions <- reactive({
     
     req(selected_id())
     gaid <- selected_id()
@@ -106,19 +118,70 @@ server <- function(input, output) {
     
   })
   
+  get_sessions_by_hour <- reactive({
+    
+    req(selected_id())
+    gaid <- selected_id()
+    
+    with_shiny(google_analytics,
+               viewId = gaid,
+               date_range = c(lubridate::today() - 90, lubridate::today()),
+               metrics = c('sessions', 'Users', 'newUsers'),
+               dimensions = c('dateHour', 'deviceCategory', 'dayOfWeekName'),
+               shiny_access_token = token())
+  })
+  
+  
+  ###################################################
+  ############## CREATE OUTPUTS #####################
+  ###################################################
   output$DailyDeviceSessions <- renderHighchart({
     
     # only trigger once authenticated
-    req(gadata())
+    req(get_device_sessions())
     
-    gadata <- gadata()
+    gadata <- get_device_sessions()
     
-    highcharter::hchart(gadata, 'spline' , hcaes(x = date, y = sessions, 
+    hchart(gadata, 'spline' , hcaes(x = date, y = sessions, 
                                                  group = deviceCategory)) %>%
+      hc_xAxis(
+        title = list( 
+          text = ''
+        )
+      ) %>% 
       hc_title(text = 'Device Sessions') 
       
     
   })
+  
+  output$SessionsByHour <- renderHighchart({
+    
+    req(get_sessions_by_hour())
+    
+    gadata <- get_sessions_by_hour()
+    
+    gadata$dateHour <- 
+      lubridate::hour(lubridate::force_tz(lubridate::ymd_h(gadata$dateHour), tzone = "America/Los_Angeles"))  
+    
+    gadata <- 
+      gadata %>% 
+        group_by(dateHour, dayOfWeekName) %>% 
+        summarize(sessions = sum(sessions, na.rm = TRUE))
+    
+    hchart(gadata, type = 'heatmap', hcaes(x = dateHour, y = dayOfWeekName, 
+                                           value = sessions)) %>% 
+      hc_xAxis(
+        title = list( 
+          text = ''
+        )
+      ) %>% 
+      hc_yAxis(
+        title = list( 
+          text = ''
+        )
+      )
+  })
+  
 }
 
 
