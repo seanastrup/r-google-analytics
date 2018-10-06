@@ -1,0 +1,26 @@
+body {
+background-color: #fafafa;
+}
+.selectize-input{
+  height: 50%;
+}
+header, .main, footer {
+  padding-left: 250px;
+}
+@media only screen and (max-width : 992px) {
+  header, .main, footer {
+    padding-left: 0;
+  }
+}
+.sidenav {
+  margin-top: 65px;
+  width: 250px;
+}
+.navbar{
+  left: 100px;
+  right: 100px;
+}
+#login-btn{
+  float: right;
+  padding: 5px;
+}
