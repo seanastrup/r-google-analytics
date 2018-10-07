@@ -24,7 +24,7 @@ ui <-
       tags$script(src = 'https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0-rc.2/js/materialize.min.js'),  # material js
       tags$script(src = 'my.js'),  # my js
       tags$link(rel = 'stylesheet', href = 'https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0-rc.2/css/materialize.min.css'),  # material css
-      tags$link(rel = 'stylesheet', href = '/style.css')  # my css
+      tags$link(rel = 'stylesheet', href = 'style.css')  # my css
     ),  # head
     tags$nav(style = 'padding:0px; margin:0%',
       tags$a(href = '#', 'data-target' = 'slide-out', class = 'sidenav-trigger hide-on-large-only',
@@ -50,7 +50,7 @@ ui <-
           tags$li(
             tags$a(class = 'collapsible-header white-text waves-effect waves-blue ', 
               tags$i(class = 'material-icons white-text ', 'fingerprint'), 
-              tags$div(class = 'nav-words', 'Login')
+              tags$div(class = 'nav-words', 'Choose View')
             ),  # a
             tags$div(class = 'collapsible-body z-depth-3', 
               tags$ul(
@@ -146,6 +146,7 @@ server <- function(session, input, output) {
                       "Accounts",
                       label = "Accounts",
                       choices = choice, 
+                      selected = choice[1],
                       server = TRUE)
     
   })
@@ -164,6 +165,7 @@ server <- function(session, input, output) {
       updateSelectizeInput(session, 
                         "Properties", label="Properties",
                         choices = choice, 
+                        selected = choice[1],
                         server = TRUE)
     
     })
@@ -185,6 +187,7 @@ server <- function(session, input, output) {
     updateSelectizeInput(session, 
                          "Views", label = "Views",
                          choices = choice, 
+                         selected = choice[1],
                          server = TRUE)
   })
   
@@ -288,4 +291,4 @@ server <- function(session, input, output) {
 
 
 
-shinyApp(ui = ui, server = server)
+shinyApp(ui = ui, server = server, options = list(port = '5761'))
