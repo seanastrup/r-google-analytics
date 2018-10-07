@@ -3,7 +3,6 @@
 
 
 library(shiny)
-library(shinydashboard)
 library(googleAnalyticsR)
 library(googleAuthR)
 library(highcharter)
