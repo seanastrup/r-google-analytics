@@ -79,6 +79,19 @@ ui <-
       )  # blue li
     ),  # side nav
     tags$div(class = 'main',
+      tags$p(style = 'display: inline; vertical-align: top;', textOutput('GaAccount'), 
+             tags$i(class = 'material-icons', 'chevron_right'), textOutput('GaProperty'), 
+             tags$i(class = 'material-icons', 'chevron_right'), textOutput('GaView')),
+      # tags$div(id = 'selected-information', style = 'display: inline',
+        # tags$p(style = 'display: inline;', textOutput('GaAccount'), 
+        #        textOutput('GaProperty'), 
+        #        textOutput('GaView')),
+        # tags$p(style = 'display: inline;', textOutput('GaProperty')), 
+        # tags$p(style = 'display: inline;', textOutput('GaView'))
+      # ),  # selected information
+      shiny::textOutput('TestAccount'),
+      shiny::textOutput('TestProperty'),
+      shiny::textOutput('TestView'),
       shiny::fluidRow(
         shiny::column(
           width = 6,
@@ -118,7 +131,7 @@ server <- function(session, input, output) {
     
   })
   
-  selected_id <- callModule(authDropdown, 'auth_menu', ga.table = ga_accounts)
+  # selected_id <- callModule(authDropdown, 'auth_menu', ga.table = ga_accounts)
   
   AccountTable <- reactive({
     
@@ -145,13 +158,13 @@ server <- function(session, input, output) {
     
     pList  <- pList()
     
-    choice <- unique(pList$accountName)
+    AccountChoices <- unique(pList$accountName)
     
     updateSelectizeInput(session, 
                       "Accounts",
                       label = "Accounts",
-                      choices = choice, 
-                      selected = choice[1],
+                      choices = AccountChoices, 
+                      selected = AccountChoices[1],
                       server = TRUE)
     
   })
@@ -165,12 +178,12 @@ server <- function(session, input, output) {
       
       pList <- pList[input$Accounts == pList$accountName,]
       
-      choice <- pList$websiteUrl
+      PropertyChoices <- pList$websiteUrl
       
       updateSelectizeInput(session, 
                         "Properties", label="Properties",
-                        choices = choice, 
-                        selected = choice[1],
+                        choices = PropertyChoices, 
+                        selected = PropertyChoices[1],
                         server = TRUE)
     
     })
@@ -185,17 +198,42 @@ server <- function(session, input, output) {
     
     pList <- pList[input$Properties == pList$websiteUrl,]
     
-    choice <- pList$viewId 
+    ViewChoices <- pList$viewId 
     
-    names(choice) <- paste(pList$viewName, pList$viewId)
+    names(ViewChoices) <- paste(pList$viewName, pList$viewId)
     
     updateSelectizeInput(session, 
                          "Views", label = "Views",
-                         choices = choice, 
-                         selected = choice[1],
+                         choices = ViewChoices, 
+                         selected = ViewChoices[1],
                          server = TRUE)
   })
   
+  GaAccount <- reactive({
+    
+    validate(
+      need(pList(), "Need profiles")
+    )
+    
+    pList  <- pList()
+    
+    out <- unique(pList$accountName)
+    
+    return(out[1])
+    
+  })
+  GaProperty <- reactive({
+    
+    validate(
+      need(input$Properties, "Please login")
+    )
+    
+    pList <- pList()
+    out <- pList[input$Accounts == pList$accountName,]
+    
+    return(out$websiteUrl)
+    
+  })
   GaView <- reactive({
     
     validate(
@@ -209,7 +247,7 @@ server <- function(session, input, output) {
     
   })
     
-  
+  choice <- 'Please login'
   ###################################################
   ######## DEFINE CALLS TO GOOGLE ANALYTICS #########
   ###################################################
@@ -293,6 +331,10 @@ server <- function(session, input, output) {
         )
       )
   })
+  
+  output$TestAccount <- renderText({GaAccount()})
+  output$TestProperty <- renderText({GaProperty()})
+  output$TestView <- renderText({GaView()})
 }
 
 
