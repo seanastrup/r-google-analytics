@@ -26,12 +26,25 @@ ui <-
       tags$link(rel = 'stylesheet', href = 'style.css')  # my css
     ),  # head
     tags$nav(style = 'padding:0px; margin:0%',
-      tags$a(href = '#', 'data-target' = 'slide-out', class = 'sidenav-trigger hide-on-large-only',
+      tags$a(href = '#', 'data-target' = 'slide-out', 
+             class = 'sidenav-trigger hide-on-large-only',
         tags$i(class = 'material-icons', 'menu')
       ),  # navbar collapse
       tags$a(href = '#', class = 'brand-logo center hide-on-small-only',
         'Google Analytics - R'
-      )
+      ),  # non-mobile brand logo
+      tags$a(href = '#', class = 'h2 center hide-on-med-and-up', 
+        'Google Analytics - R'
+      ),  # mobile brand logo
+      tags$ul(class = 'right', 
+        tags$li(
+          tags$a(href = 'http://www.github.com/seanastrup/r-google-analytics',
+                 target = '_blank',
+            tags$img(src = 'mark-github.svg', height = 35, widht = 35, 
+                     id = 'github-icon')  # github mark
+          )  # link
+        )  # github link
+      )  # ul
     ),   # navbar
     tags$br(),
     tags$ul(id = 'slide-out', class = 'sidenav sidenav-fixed how-on-large-only', 
@@ -47,19 +60,18 @@ ui <-
       tags$li(class = 'blue', 
         tags$ul(class = 'collapsible collapsible-accordion', 
           tags$li(
-            tags$a(class = 'collapsible-header white-text waves-effect waves-blue ', 
+            tags$a(class = 'collapsible-header white-text waves-effect waves-blue', 
               tags$i(class = 'material-icons white-text ', 'fingerprint'), 
               tags$div(class = 'nav-words', 'Choose View')
             ),  # a
             tags$div(class = 'collapsible-body z-depth-3', 
               tags$ul(
-                selectizeInput(inputId = 'Accounts', label = 'Accounts', choices = NULL), 
-                selectizeInput(inputId = 'Properties', label = 'Properties', choices = NULL),
-                selectizeInput(inputId = 'Views', label = 'Views', choices = NULL)
-                # tags$li(tags$a(class="waves-effect waves-blue", href = '#test1', 'First')),
-                # tags$li(tags$a(class="waves-effect waves-blue", href = '#test2', 'Second')),
-                # tags$li(tags$a(class="waves-effect waves-blue", href = '#test3', 'Third')),
-                
+                selectizeInput(inputId = 'Accounts', label = 'Accounts', 
+                               choices = NULL), 
+                selectizeInput(inputId = 'Properties', label = 'Properties', 
+                               choices = NULL),
+                selectizeInput(inputId = 'Views', label = 'Views', 
+                               choices = NULL)
               )  # ul       
             )  # collapsible body
           )  # li
@@ -67,12 +79,6 @@ ui <-
       )  # blue li
     ),  # side nav
     tags$div(class = 'main',
-      # authDropdownUI('auth_menu',inColumns = TRUE),
-      # fluidRow(
-      #   selectizeInput(inputId = 'Accounts', label = 'Accounts', choices = NULL), 
-      #   selectizeInput(inputId = 'Properties', label = 'Properties', choices = NULL),
-      #   selectizeInput(inputId = 'Views', label = 'Views', choices = NULL)
-      # ),
       shiny::fluidRow(
         shiny::column(
           width = 6,
@@ -266,7 +272,8 @@ server <- function(session, input, output) {
     gadata <- get_sessions_by_hour()
     
     gadata$dateHour <- 
-      lubridate::hour(lubridate::force_tz(lubridate::ymd_h(gadata$dateHour), tzone = "America/Los_Angeles"))  
+      lubridate::hour(lubridate::force_tz(lubridate::ymd_h(gadata$dateHour), 
+                                          tzone = "America/Los_Angeles"))  
     
     gadata <- 
       gadata %>% 
