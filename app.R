@@ -3,7 +3,6 @@
 
 
 library(shiny)
-library(shinydashboard)
 library(googleAnalyticsR)
 library(googleAuthR)
 library(highcharter)
@@ -24,13 +23,13 @@ ui <-
       tags$script(src = 'https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0-rc.2/js/materialize.min.js'),  # material js
       tags$script(src = 'my.js'),  # my js
       tags$link(rel = 'stylesheet', href = 'https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0-rc.2/css/materialize.min.css'),  # material css
-      tags$link(rel = 'stylesheet', href = '/style.css')  # my css
+      tags$link(rel = 'stylesheet', href = 'style.css')  # my css
     ),  # head
     tags$nav(style = 'padding:0px; margin:0%',
       tags$a(href = '#', 'data-target' = 'slide-out', class = 'sidenav-trigger hide-on-large-only',
         tags$i(class = 'material-icons', 'menu')
       ),  # navbar collapse
-      tags$a(href = '#', class = 'brand-logo',
+      tags$a(href = '#', class = 'brand-logo center hide-on-small-only',
         'Google Analytics - R'
       )
     ),   # navbar
@@ -50,13 +49,17 @@ ui <-
           tags$li(
             tags$a(class = 'collapsible-header white-text waves-effect waves-blue ', 
               tags$i(class = 'material-icons white-text ', 'fingerprint'), 
-              tags$div(class = 'nav-words', 'Login')
+              tags$div(class = 'nav-words', 'Choose View')
             ),  # a
             tags$div(class = 'collapsible-body z-depth-3', 
               tags$ul(
-                tags$li(tags$a(class="waves-effect waves-blue", href = '#test1', 'First')),
-                tags$li(tags$a(class="waves-effect waves-blue", href = '#test2', 'Second')),
-                tags$li(tags$a(class="waves-effect waves-blue", href = '#test3', 'Third'))
+                selectizeInput(inputId = 'Accounts', label = 'Accounts', choices = NULL), 
+                selectizeInput(inputId = 'Properties', label = 'Properties', choices = NULL),
+                selectizeInput(inputId = 'Views', label = 'Views', choices = NULL)
+                # tags$li(tags$a(class="waves-effect waves-blue", href = '#test1', 'First')),
+                # tags$li(tags$a(class="waves-effect waves-blue", href = '#test2', 'Second')),
+                # tags$li(tags$a(class="waves-effect waves-blue", href = '#test3', 'Third')),
+                
               )  # ul       
             )  # collapsible body
           )  # li
@@ -64,7 +67,12 @@ ui <-
       )  # blue li
     ),  # side nav
     tags$div(class = 'main',
-      authDropdownUI('auth_menu',inColumns = TRUE),
+      # authDropdownUI('auth_menu',inColumns = TRUE),
+      # fluidRow(
+      #   selectizeInput(inputId = 'Accounts', label = 'Accounts', choices = NULL), 
+      #   selectizeInput(inputId = 'Properties', label = 'Properties', choices = NULL),
+      #   selectizeInput(inputId = 'Views', label = 'Views', choices = NULL)
+      # ),
       shiny::fluidRow(
         shiny::column(
           width = 6,
@@ -81,17 +89,21 @@ ui <-
               highcharter::highchartOutput('SessionsByHour', height = 300)       
             )  # card content
           )  # card
-        )
-      )  # row
+        )  # column
+      )   # row
     )  # div
   )  # ui
 
 
 
-server <- function(input, output) {
+server <- function(session, input, output) {
 
   token <- callModule(googleAuth, 'login')
   
+  
+  ###################################################
+  ########## VIEW ID SELECTION CONTROLS #############
+  ###################################################
   ga_accounts <- reactive({
     
     req(token())
@@ -102,13 +114,103 @@ server <- function(input, output) {
   
   selected_id <- callModule(authDropdown, 'auth_menu', ga.table = ga_accounts)
   
+  AccountTable <- reactive({
+    
+    ga_accounts()
+    
+  })
+  
+  pList <- reactive({
+    
+    ga.table <- ga_accounts()
+    
+    ga.table[,c('accountName','webPropertyId','websiteUrl','viewName', 'viewId')]
+    
+  })
+  
+  ##############################
+  ### UPDATE SELECTION VALUES ##
+  ##############################
+  observe({
+    
+    validate(
+      need(pList(), "Need profiles")
+    )
+    
+    pList  <- pList()
+    
+    choice <- unique(pList$accountName)
+    
+    updateSelectizeInput(session, 
+                      "Accounts",
+                      label = "Accounts",
+                      choices = choice, 
+                      selected = choice[1],
+                      server = TRUE)
+    
+  })
+  
+  observe({
+      
+      validate(
+        need(input$Accounts, "Need accounts")
+      )
+      pList  <- pList()
+      
+      pList <- pList[input$Accounts == pList$accountName,]
+      
+      choice <- pList$websiteUrl
+      
+      updateSelectizeInput(session, 
+                        "Properties", label="Properties",
+                        choices = choice, 
+                        selected = choice[1],
+                        server = TRUE)
+    
+    })
+  
+  observe({
+    
+    validate(
+      need(input$Properties, "Need web")
+    )
+    
+    pList <- pList()
+    
+    pList <- pList[input$Properties == pList$websiteUrl,]
+    
+    choice <- pList$viewId 
+    
+    names(choice) <- paste(pList$viewName, pList$viewId)
+    
+    updateSelectizeInput(session, 
+                         "Views", label = "Views",
+                         choices = choice, 
+                         selected = choice[1],
+                         server = TRUE)
+  })
+  
+  GaView <- reactive({
+    
+    validate(
+      need(input$Views, "Please login")
+    )
+    pList <- pList()
+    
+    out <- pList[input$Views == pList$viewId,]
+    
+    return(out$viewId)
+    
+  })
+    
+  
   ###################################################
   ######## DEFINE CALLS TO GOOGLE ANALYTICS #########
   ###################################################
   get_device_sessions <- reactive({
     
-    req(selected_id())
-    gaid <- selected_id()
+    req(GaView())
+    gaid <- GaView()
     with_shiny(google_analytics,
                viewId = gaid,
                date_range = c(lubridate::today() - 90, lubridate::today()),
@@ -120,8 +222,8 @@ server <- function(input, output) {
   
   get_sessions_by_hour <- reactive({
     
-    req(selected_id())
-    gaid <- selected_id()
+    req(GaView())
+    gaid <- GaView()
     
     with_shiny(google_analytics,
                viewId = gaid,
@@ -130,7 +232,6 @@ server <- function(input, output) {
                dimensions = c('dateHour', 'deviceCategory', 'dayOfWeekName'),
                shiny_access_token = token())
   })
-  
   
   ###################################################
   ############## CREATE OUTPUTS #####################
@@ -149,11 +250,15 @@ server <- function(input, output) {
           text = ''
         )
       ) %>% 
-      hc_title(text = 'Device Sessions') 
+      hc_yAxis(
+        title = list( 
+          text = ''
+        )
+      ) %>% 
+      hc_title(text = 'Device Sessions By Date') 
       
     
   })
-  
   output$SessionsByHour <- renderHighchart({
     
     req(get_sessions_by_hour())
@@ -181,9 +286,8 @@ server <- function(input, output) {
         )
       )
   })
-  
 }
 
 
 
-shinyApp(ui = ui, server = server)
+shinyApp(ui = ui, server = server, options = list(port = '5761'))

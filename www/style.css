@@ -24,3 +24,6 @@ header, .main, footer {
   float: right;
   padding: 5px;
 }
+.selectize-input {
+  height: 10px;
+}
