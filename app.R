@@ -29,7 +29,7 @@ ui <-
       tags$a(href = '#', 'data-target' = 'slide-out', class = 'sidenav-trigger hide-on-large-only',
         tags$i(class = 'material-icons', 'menu')
       ),  # navbar collapse
-      tags$a(href = '#', class = 'brand-logo',
+      tags$a(href = '#', class = 'brand-logo center hide-on-small-only',
         'Google Analytics - R'
       )
     ),   # navbar
